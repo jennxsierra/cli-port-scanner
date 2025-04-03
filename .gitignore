@@ -7,13 +7,3 @@
 
 # Build directory
 bin/
-build/
-
-# OS or Editor folders/files
-.DS_Store
-.vscode/
-.idea/
-
-# Logs and temporary files
-*.log
-*.tmp
