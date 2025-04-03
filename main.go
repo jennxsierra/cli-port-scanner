@@ -106,8 +106,9 @@ func main() {
 		// Create a progress channel and start one dynamic progress bar per target.
 		totalPorts := len(portList)
 		progressChan := make(chan int, totalPorts)
+		done := make(chan struct{})
 		pb := progress.NewProgressBar(totalPorts, 20)
-		go pb.Start(progressChan)
+		go pb.Start(progressChan, done)
 
 		// Configure and run the scan. Pass the progress channel.
 		cfg := scanner.Config{
@@ -120,6 +121,8 @@ func main() {
 		result := scanner.ScanTarget(cfg, progressChan)
 		// Close progress channel so progress bar finishes.
 		close(progressChan)
+		// Wait for progress bar to signal completion.
+		<-done
 
 		overallResults = append(overallResults, result)
 

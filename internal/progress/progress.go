@@ -25,8 +25,8 @@ func NewProgressBar(total, width int) *ProgressBar {
 }
 
 // Start listens on the provided channel for progress increments.
-// This function runs until the total number of increments is received.
-func (pb *ProgressBar) Start(progressChan <-chan int) {
+// When the progress channel is closed or the total is reached, it signals on the done channel.
+func (pb *ProgressBar) Start(progressChan <-chan int, done chan<- struct{}) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -34,6 +34,7 @@ func (pb *ProgressBar) Start(progressChan <-chan int) {
 		case incr, ok := <-progressChan:
 			if !ok {
 				pb.print() // final print
+				done <- struct{}{}
 				return
 			}
 			pb.Current += incr
@@ -42,6 +43,7 @@ func (pb *ProgressBar) Start(progressChan <-chan int) {
 		}
 		if pb.Current >= pb.Total {
 			pb.print()
+			done <- struct{}{}
 			return
 		}
 	}
