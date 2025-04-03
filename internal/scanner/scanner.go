@@ -1,0 +1,129 @@
+// Filename: scanner.go
+// Description: Contains the port scanning logic and data structures.
+package scanner
+
+import (
+	"encoding/json"
+	"fmt"
+	"net"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+)
+
+// Config holds scanning parameters.
+type Config struct {
+	Target     string
+	Ports      []int
+	Workers    int
+	Timeout    time.Duration
+	MaxRetries int
+}
+
+// PortResult holds the scanning result for a single port.
+type PortResult struct {
+	Port   int    `json:"port"`
+	Banner string `json:"banner,omitempty"`
+}
+
+// Result holds the overall scan result for a target.
+type Result struct {
+	Target     string       `json:"target"`
+	OpenPorts  []PortResult `json:"open_ports"`
+	TotalPorts int          `json:"total_ports"`
+	OpenCount  int          `json:"open_count"`
+	Duration   string       `json:"duration"`
+}
+
+// ScanTarget scans the given target based on the provided config.
+// It sends an integer (1) on the provided progress channel for every port processed.
+func ScanTarget(cfg Config, progress chan<- int) Result {
+	var mu sync.Mutex
+	openPorts := []PortResult{}
+	totalPorts := len(cfg.Ports)
+
+	startTime := time.Now()
+
+	tasks := make(chan int, totalPorts)
+	var wg sync.WaitGroup
+
+	dialer := net.Dialer{
+		Timeout: cfg.Timeout,
+	}
+
+	// Worker function that processes a port from the tasks channel.
+	worker := func() {
+		defer wg.Done()
+		for port := range tasks {
+			addr := net.JoinHostPort(cfg.Target, strconv.Itoa(port))
+			var banner string
+			success := false
+			for i := 0; i < cfg.MaxRetries; i++ {
+				conn, err := dialer.Dial("tcp", addr)
+				if err == nil {
+					// Successful connection; attempt banner grabbing.
+					banner = grabBanner(conn)
+					conn.Close()
+					success = true
+					break
+				}
+				backoff := time.Duration(1<<i) * time.Second
+				time.Sleep(backoff)
+			}
+			if success {
+				mu.Lock()
+				openPorts = append(openPorts, PortResult{Port: port, Banner: banner})
+				mu.Unlock()
+				// Removed per-port printing to avoid interfering with the dynamic progress bar.
+			}
+			// Report progress.
+			progress <- 1
+		}
+	}
+
+	// Launch worker goroutines.
+	for i := 0; i < cfg.Workers; i++ {
+		wg.Add(1)
+		go worker()
+	}
+
+	// Send ports to the tasks channel.
+	go func() {
+		for _, port := range cfg.Ports {
+			tasks <- port
+		}
+		close(tasks)
+	}()
+
+	wg.Wait()
+	duration := time.Since(startTime)
+
+	return Result{
+		Target:     cfg.Target,
+		OpenPorts:  openPorts,
+		TotalPorts: totalPorts,
+		OpenCount:  len(openPorts),
+		Duration:   fmt.Sprintf("%.3fs", duration.Seconds()),
+	}
+}
+
+// grabBanner attempts to read an initial response from an open connection.
+func grabBanner(conn net.Conn) string {
+	conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(buf[:n]))
+}
+
+// ToJSON returns the JSON string of the scan Result.
+func (r Result) ToJSON() (string, error) {
+	b, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
