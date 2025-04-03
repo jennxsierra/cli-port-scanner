@@ -3,7 +3,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jennxsierra/cli-port-scanner/internal/output"
 	"github.com/jennxsierra/cli-port-scanner/internal/progress"
 	"github.com/jennxsierra/cli-port-scanner/internal/scanner"
 	"github.com/jennxsierra/cli-port-scanner/internal/ui"
@@ -134,18 +134,11 @@ func main() {
 
 	// Write JSON file if the -json flag is set.
 	if *jsonFlag {
-		jsonData, err := json.MarshalIndent(overallResults, "", "  ")
-		if err != nil {
-			fmt.Println("Error marshalling JSON:", err)
+		// Create the overall JSON output with metadata.
+		jsonData := output.NewScanOutput(targets, len(portList), overallResults)
+		if err := output.WriteJSON(jsonData); err != nil {
+			fmt.Println("Error writing JSON:", err)
 			os.Exit(1)
 		}
-		// Filename format: DDMMYY-HHMMSS-cli-pscan.json
-		fileName := time.Now().Format("020106-150405") + "-cli-pscan.json"
-		err = os.WriteFile(fileName, jsonData, 0644)
-		if err != nil {
-			fmt.Println("Error writing JSON file:", err)
-			os.Exit(1)
-		}
-		fmt.Printf("Scan results saved to %s\n", fileName)
 	}
 }
