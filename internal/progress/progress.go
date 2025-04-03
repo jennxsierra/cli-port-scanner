@@ -58,7 +58,7 @@ func (pb *ProgressBar) print() {
 	}
 	empty := pb.Width - filled
 	bar := strings.Repeat("█", filled) + strings.Repeat(" ", empty)
-	fmt.Printf("\rProgress: [%s] %3.0f%%", bar, percent*100)
+	fmt.Printf("\rProgress: [%s] %3.0f%% [%d/%d ports]", bar, percent*100, pb.Current, pb.Total)
 	if pb.Current >= pb.Total {
 		fmt.Print("\n")
 	}
