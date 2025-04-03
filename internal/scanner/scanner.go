@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
+
+	"github.com/jennxsierra/cli-port-scanner/internal/banner"
 )
 
 // Config holds scanning parameters.
@@ -57,13 +59,12 @@ func ScanTarget(cfg Config, progress chan<- int) Result {
 		defer wg.Done()
 		for port := range tasks {
 			addr := net.JoinHostPort(cfg.Target, strconv.Itoa(port))
-			var banner string
+			var bannerResult string
 			success := false
 			for i := 0; i < cfg.MaxRetries; i++ {
 				conn, err := dialer.Dial("tcp", addr)
 				if err == nil {
-					// Successful connection; attempt banner grabbing.
-					banner = grabBanner(conn)
+					bannerResult = banner.GrabBanner(conn, port)
 					conn.Close()
 					success = true
 					break
@@ -73,9 +74,8 @@ func ScanTarget(cfg Config, progress chan<- int) Result {
 			}
 			if success {
 				mu.Lock()
-				openPorts = append(openPorts, PortResult{Port: port, Banner: banner})
+				openPorts = append(openPorts, PortResult{Port: port, Banner: bannerResult})
 				mu.Unlock()
-				// Removed per-port printing to avoid interfering with the dynamic progress bar.
 			}
 			// Report progress.
 			progress <- 1
@@ -97,6 +97,12 @@ func ScanTarget(cfg Config, progress chan<- int) Result {
 	}()
 
 	wg.Wait()
+
+	// Sort open ports in ascending order.
+	sort.Slice(openPorts, func(i, j int) bool {
+		return openPorts[i].Port < openPorts[j].Port
+	})
+
 	duration := time.Since(startTime)
 
 	return Result{
@@ -106,17 +112,6 @@ func ScanTarget(cfg Config, progress chan<- int) Result {
 		OpenCount:  len(openPorts),
 		Duration:   fmt.Sprintf("%.3fs", duration.Seconds()),
 	}
-}
-
-// grabBanner attempts to read an initial response from an open connection.
-func grabBanner(conn net.Conn) string {
-	conn.SetReadDeadline(time.Now().Add(1 * time.Second))
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(buf[:n]))
 }
 
 // ToJSON returns the JSON string of the scan Result.

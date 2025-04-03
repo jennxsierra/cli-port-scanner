@@ -42,7 +42,7 @@ func PrintBanners(result scanner.Result) {
 		if banner == "" {
 			banner = "<no banner>"
 		}
-		fmt.Printf("Port %d: \"%s\"\n", pr.Port, banner)
+		fmt.Printf("%-10s: %q\n", fmt.Sprintf("Port %d", pr.Port), banner)
 	}
 }
 
