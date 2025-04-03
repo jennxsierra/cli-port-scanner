@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/jennxsierra/cli-port-scanner/internal/scanner"
@@ -29,19 +30,28 @@ func NewScanOutput(targets []string, totalPorts int, results []scanner.Result) S
 	}
 }
 
-// WriteJSON marshals the ScanOutput struct to JSON and writes it to a file.
+// WriteJSON marshals the ScanOutput struct to JSON and writes it to the "scan-results" folder in the project root.
 func WriteJSON(outputData ScanOutput) error {
 	bytes, err := json.MarshalIndent(outputData, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error marshalling JSON: %w", err)
 	}
 
+	// Define the output directory as "scan-results" in the project root.
+	outDir := "scan-results"
+
+	// Ensure the output directory exists.
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		return fmt.Errorf("error creating output directory: %w", err)
+	}
+
 	// Filename format: DDMMYY-HHMMSS-cli-pscan.json.
 	fileName := time.Now().Format("020106-150405") + "-cli-pscan.json"
-	if err := os.WriteFile(fileName, bytes, 0644); err != nil {
+	fullPath := filepath.Join(outDir, fileName)
+	if err := os.WriteFile(fullPath, bytes, 0644); err != nil {
 		return fmt.Errorf("error writing JSON file: %w", err)
 	}
 
-	fmt.Printf("Scan results saved to %s\n", fileName)
+	fmt.Printf("Scan results saved to %s\n", fullPath)
 	return nil
 }

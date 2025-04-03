@@ -8,6 +8,7 @@ GO := go
 PKG := ./...
 PREFIX := [make]
 BUILD_DIR := bin/
+RESULTS_DIR := scan-results/
 
 # Defines the default target to be executed when no target is specified.
 .DEFAULT_GOAL := build
@@ -35,7 +36,7 @@ test:
 clean:
 	@echo "$(PREFIX) Cleaning build artifacts..."
 	@rm -rfv $(BUILD_DIR)
-	@rm -v *-cli-pscan.json
+	@rm -rfv $(RESULTS_DIR)
 
 check: fmt vet test
 	@echo "$(PREFIX) Quality checks (format, vet, tests) complete!"
