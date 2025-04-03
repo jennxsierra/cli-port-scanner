@@ -35,6 +35,7 @@ test:
 clean:
 	@echo "$(PREFIX) Cleaning build artifacts..."
 	@rm -rfv $(BUILD_DIR)
+	@rm -v *-cli-pscan.json
 
 check: fmt vet test
 	@echo "$(PREFIX) Quality checks (format, vet, tests) complete!"

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type Summary struct {
+type BaseSummary struct {
 	Target     string
 	TotalPorts int
 	OpenPorts  []int

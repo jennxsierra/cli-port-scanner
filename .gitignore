@@ -1,9 +1,5 @@
-# Binaries for programs and plugins
-*.exe
-*.dll
-*.so
-*.dylib
-*.out
-
 # Build directory
 bin/
+
+# JSON files produced by the build
+*-cli-pscan.json
