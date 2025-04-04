@@ -74,14 +74,13 @@ Below is an example command that demonstrates the use of multiple flags. This ex
 ====================================================
                SCAN START: example.com
 ====================================================
-Scanning ports: 80, 81, 82, 83, 84, 85
 Progress: [████████████████████] 100% [6/6 ports]
 
 [SCAN SUMMARY]
-Target         : example.com
-Ports Scanned  : 80, 81, 82, 83, 84, 85
-Open Ports     : 80
-Time Taken     : 16.005s
+Target              : example.com
+Total Ports Scanned : 6
+Open Ports          : 80
+Time Taken          : 16.005s
 
 [BANNERS]
 Port 80   : "AkamaiGHost"
