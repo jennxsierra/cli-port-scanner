@@ -4,7 +4,7 @@ A simple CLI-based port scanner written in Go. This tool scans specified targets
 
 > [!TIP]
 >
-> Watch a demo of the CLI Port Scanner in action on [YouTube](https://www.github.com/jennxiserra).
+> Watch a demo of the CLI Port Scanner in action on [YouTube](https://youtu.be/hbWqlW8W2Xg).
 
 ## Table of Contents
 
